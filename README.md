@@ -8,7 +8,11 @@ Spawn five specialist agents — Smoke · Visual · Journey · Watchdog · Aesth
 
 [Quick start](#quick-start) · [Architecture](#architecture) · [Plug into CI](#plug-into-ci) · [Self-host](#self-host) · [Deploy guide](DEPLOY.md) · [License: MIT](LICENSE)
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/qa-pilot?referralCode=W3JDev)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new)
+[![Deploy landing on Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FW3JDev%2Fqa-pilot&root-directory=landing&project-name=qa-pilot-landing)
+
+
+<sub>**Railway button** opens the project picker — pick **Deploy from GitHub repo** → choose `W3JDev/qa-pilot`. Set env vars per [DEPLOY.md](DEPLOY.md), wait ~3-5 min for the first build.<br>**Vercel button** deploys the landing page in `landing/` directly (no setup needed).</sub>
 [![Star on GitHub](https://img.shields.io/github/stars/W3JDev/qa-pilot?style=social)](https://github.com/W3JDev/qa-pilot)
 
 </div>
