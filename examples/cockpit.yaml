@@ -1,0 +1,24 @@
+# Real-world example — runs the W3J Cockpit through the full QA team.
+# This is the same config used to produce the first run report.
+
+target_url: https://w3j-cockpit-production.up.railway.app
+
+viewports:
+  - { width: 1440, height: 900, name: desktop }
+  - { width: 1024, height: 768, name: tablet }
+  - { width: 390,  height: 844, name: mobile }
+
+agents:
+  - vega_smoke
+  - iris_visual
+  - sage_aesthetic
+
+llm_model: gpt-4o-mini
+
+report:
+  formats: [markdown]
+  destinations:
+    - { type: stdout }
+    - { type: file, path: ./qa-cockpit-report.md }
+    # Uncomment to ping the W3J Telegram supergroup:
+    # - { type: telegram, config: { chat_id: "-1003816725976" } }

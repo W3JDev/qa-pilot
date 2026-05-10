@@ -1,0 +1,20 @@
+# Minimal smoke + design review of any URL.
+# Usage: qa-pilot run examples/basic.yaml
+
+target_url: https://example.com
+
+viewports:
+  - { width: 1440, height: 900, name: desktop }
+
+agents:
+  - vega_smoke
+  - iris_visual
+  - sage_aesthetic
+
+llm_model: gpt-4o-mini   # any litellm-supported model
+
+report:
+  formats: [markdown]
+  destinations:
+    - { type: stdout }
+    - { type: file, path: ./qa-report.md }
