@@ -37,9 +37,20 @@ dev = [
     "ruff>=0.8",
     "mypy>=1.13",
 ]
+server = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+]
 github = ["PyGithub>=2.5"]
 slack = ["slack-sdk>=3.33"]
 telegram = ["python-telegram-bot>=21.7"]
+all = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "PyGithub>=2.5",
+    "slack-sdk>=3.33",
+    "python-telegram-bot>=21.7",
+]
 
 [project.scripts]
 qa-pilot = "qa_pilot.cli:app"

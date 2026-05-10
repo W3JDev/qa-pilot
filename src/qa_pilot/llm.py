@@ -7,6 +7,19 @@ bring their own key. We don't lock them in.
 Two helpers:
   * complete(prompt, model)       — text → text
   * vision(prompt, image_path, model) — image + text → text
+
+# Ollama support (free, self-hosted, perfect for CI / local dev)
+
+Set OLLAMA_API_BASE to your Ollama instance URL (e.g. a Railway-hosted
+Ollama at https://ollama-production.up.railway.app or http://localhost:11434
+for local). Then use a model string like:
+
+    qa-pilot smoke <url> --model "ollama/llama3.1:8b"
+    qa-pilot smoke <url> --model "ollama/llama3.2-vision:11b"   # vision-capable
+
+litellm auto-routes anything starting with `ollama/` to OLLAMA_API_BASE.
+For vision agents (Iris, Sage), use a vision-capable model like
+llama3.2-vision or llava.
 """
 from __future__ import annotations
 
@@ -16,6 +29,7 @@ import logging
 import os
 from pathlib import Path
 
+import litellm
 from litellm import acompletion
 
 logger = logging.getLogger("qa_pilot.llm")
@@ -23,6 +37,22 @@ logger = logging.getLogger("qa_pilot.llm")
 
 DEFAULT_TEXT_MODEL = os.environ.get("QA_PILOT_TEXT_MODEL", "gpt-4o-mini")
 DEFAULT_VISION_MODEL = os.environ.get("QA_PILOT_VISION_MODEL", "gpt-4o-mini")
+
+# Honor OLLAMA_API_BASE if set — wires litellm to a remote Ollama instance.
+# Supports both bare ollama/ and ollama_chat/ model prefixes.
+_OLLAMA_BASE = os.environ.get("OLLAMA_API_BASE") or os.environ.get("OLLAMA_HOST")
+if _OLLAMA_BASE:
+    litellm.api_base = _OLLAMA_BASE
+    logger.info("OLLAMA_API_BASE configured: %s", _OLLAMA_BASE)
+
+
+def _kwargs_for_ollama(model: str) -> dict:
+    """Per-call kwargs to inject when targeting Ollama (api_base override is
+    needed for some litellm versions, even if litellm.api_base is set)."""
+    if model.startswith("ollama/") or model.startswith("ollama_chat/"):
+        if _OLLAMA_BASE:
+            return {"api_base": _OLLAMA_BASE}
+    return {}
 
 
 async def complete(
@@ -48,6 +78,7 @@ async def complete(
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                **_kwargs_for_ollama(model),
             ),
             timeout=timeout_sec,
         )
@@ -95,6 +126,7 @@ async def vision(
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                **_kwargs_for_ollama(model),
             ),
             timeout=timeout_sec,
         )
