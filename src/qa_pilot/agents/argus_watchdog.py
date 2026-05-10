@@ -55,9 +55,16 @@ class ArgusWatchdog(Agent):
             shot = await session.screenshot("watchdog_final", full_page=False)
             artifacts.append(str(shot))
 
-            # Deduplicate console errors by text (same error fires repeatedly)
+            # Deduplicate console errors by text (same error fires repeatedly).
+            # Per qa-pilot issue #7 — also include CDP-captured Log.entryAdded
+            # events which catch browser-level deprecations + violations not
+            # reported via the regular `console` event.
             seen_console: set[str] = set()
-            for entry in session.captured.console:
+            all_console_entries = (
+                list(session.captured.console)
+                + list(session.captured.cdp_log_entries)
+            )
+            for entry in all_console_entries:
                 if entry.level not in ("error", "warning"):
                     continue
                 key = entry.text[:200]
@@ -74,6 +81,32 @@ class ArgusWatchdog(Agent):
                     description=entry.text[:800],
                     evidence_url=entry.location_url or self.config.target_url,
                     tags=["console", entry.level],
+                ))
+
+            # Runtime exceptions (uncaught JS) — per issue #7. These are the
+            # invisible bugs the DOM scan misses entirely. ALWAYS severity 2+.
+            seen_exc: set[str] = set()
+            for exc in session.captured.runtime_exceptions:
+                key = exc.text[:200]
+                if key in seen_exc:
+                    continue
+                seen_exc.add(key)
+                location = ""
+                if exc.url:
+                    location = f"\nat {exc.url}"
+                    if exc.line is not None:
+                        location += f":{exc.line}"
+                findings.append(Finding(
+                    id=f"argus.runtime_exc.{abs(hash(key)) % 10**8}",
+                    agent=self.name,
+                    severity=Severity.MEDIUM,
+                    title=f"Uncaught JS exception: {exc.text[:80]}",
+                    description=(
+                        f"{exc.text}{location}\n\n"
+                        f"Stack:\n{exc.stack or '(no stack)'}"
+                    )[:1500],
+                    evidence_url=exc.url or self.config.target_url,
+                    tags=["runtime", "javascript"],
                 ))
 
             # Deduplicate network failures by (method, url, status)
@@ -113,7 +146,8 @@ class ArgusWatchdog(Agent):
             artifacts=artifacts,
             summary=(
                 f"watchdog: {len(seen_console)} console, "
-                f"{len(seen_net)} network issues"
+                f"{len(seen_net)} network, "
+                f"{len(seen_exc)} runtime exception(s)"
             ),
         )
 

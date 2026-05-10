@@ -6,7 +6,10 @@
 
 Spawn five specialist agents — Smoke · Visual · Journey · Watchdog · Aesthetic — that drive a real browser, capture evidence, and report findings like a human tester. Run it locally, in CI, in Docker, or as a service.
 
-[Quick start](#quick-start) · [Architecture](#architecture) · [Plug into CI](#plug-into-ci) · [Self-host](#self-host) · [License: MIT](LICENSE)
+[Quick start](#quick-start) · [Architecture](#architecture) · [Plug into CI](#plug-into-ci) · [Self-host](#self-host) · [Deploy guide](DEPLOY.md) · [License: MIT](LICENSE)
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/qa-pilot?referralCode=W3JDev)
+[![Star on GitHub](https://img.shields.io/github/stars/W3JDev/qa-pilot?style=social)](https://github.com/W3JDev/qa-pilot)
 
 </div>
 

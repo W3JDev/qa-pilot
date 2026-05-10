@@ -146,9 +146,16 @@ class KaiJourney(Agent):
                     await session.page.locator(step.selector).first.click(timeout=5_000)
                     return True, ""
                 if step.target:
-                    if await session.click_text(step.target, timeout_ms=5_000):
+                    # Per qa-pilot issue #6 — use the smart_click fallback chain
+                    # (role -> text -> aria-label) instead of plain text-only.
+                    # This is what makes sequential SPA clicks reliable
+                    # without re-navigating between steps.
+                    if await session.smart_click(step.target, timeout_ms=5_000):
                         return True, ""
-                    return False, f"could not click element matching {step.target!r}"
+                    return False, (
+                        f"smart_click could not find a button/link/text "
+                        f"matching {step.target!r} after role+text+aria fallbacks"
+                    )
                 return False, "click step requires `target` or `selector`"
 
             if action == "type":

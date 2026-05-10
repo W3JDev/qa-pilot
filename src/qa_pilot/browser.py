@@ -48,11 +48,24 @@ class NetworkFailure:
 
 
 @dataclass
+class RuntimeException:
+    """Captured via CDP Runtime.exceptionThrown — uncaught JS errors that
+    don't always surface via console.error."""
+    text: str
+    line: int | None = None
+    column: int | None = None
+    url: str | None = None
+    stack: str | None = None
+
+
+@dataclass
 class CapturedSession:
     """What the watchdog agent reads after a session is closed."""
     console: list[ConsoleEntry] = field(default_factory=list)
     network_failures: list[NetworkFailure] = field(default_factory=list)
     screenshots: list[Path] = field(default_factory=list)
+    runtime_exceptions: list[RuntimeException] = field(default_factory=list)
+    cdp_log_entries: list[ConsoleEntry] = field(default_factory=list)
 
 
 class BrowserSession:
@@ -82,6 +95,7 @@ class BrowserSession:
         self._page: Page | None = None
         self._ctx: BrowserContext | None = None
         self._pw = None
+        self._cdp = None
 
     async def __aenter__(self) -> "BrowserSession":
         self._pw = await async_playwright().start()
@@ -125,6 +139,59 @@ class BrowserSession:
         page.on("console", _on_console)
         page.on("response", _on_response)
         page.on("requestfailed", _on_request_failed)
+
+        # CDP-direct listeners (per qa-pilot issue #7) — catches uncaught JS
+        # exceptions, browser-level Log entries (deprecations, violations),
+        # and network failures that don't fire response events (CORS, CSP).
+        try:
+            cdp = await self._ctx.new_cdp_session(page)
+            await cdp.send("Runtime.enable")
+            await cdp.send("Network.enable")
+            await cdp.send("Log.enable")
+            self._cdp = cdp
+
+            def _on_exception(params):
+                d = params.get("exceptionDetails", {})
+                self.captured.runtime_exceptions.append(RuntimeException(
+                    text=d.get("text") or d.get("exception", {}).get("description") or "uncaught exception",
+                    line=d.get("lineNumber"),
+                    column=d.get("columnNumber"),
+                    url=d.get("url"),
+                    stack=(d.get("exception") or {}).get("description"),
+                ))
+
+            def _on_loading_failed(params):
+                self.captured.network_failures.append(NetworkFailure(
+                    url=params.get("request", {}).get("url") or "(unknown)",
+                    method=params.get("request", {}).get("method", "GET"),
+                    status=None,
+                    failure_text=(
+                        f"{params.get('errorText', 'failed')} "
+                        f"(blocked={params.get('blockedReason') or 'no'}, "
+                        f"type={params.get('type', '?')})"
+                    )[:240],
+                ))
+
+            def _on_log_entry(params):
+                entry = params.get("entry", {})
+                level = entry.get("level", "log")
+                if level not in ("error", "warning"):
+                    return
+                self.captured.cdp_log_entries.append(ConsoleEntry(
+                    level=level,
+                    text=entry.get("text", ""),
+                    location_url=entry.get("url"),
+                ))
+
+            cdp.on("Runtime.exceptionThrown", _on_exception)
+            cdp.on("Network.loadingFailed", _on_loading_failed)
+            cdp.on("Log.entryAdded", _on_log_entry)
+        except Exception as e:
+            # CDP is not strictly required — if it fails (e.g. older Chromium
+            # build), continue with the Playwright-event-only path.
+            logger.debug("CDP listeners not attached: %s", e)
+            self._cdp = None
+
         return self
 
     async def __aexit__(self, *exc) -> None:
@@ -168,6 +235,32 @@ class BrowserSession:
         except Exception as e:
             logger.warning("click_text(%r) failed: %s", text, e)
             return False
+
+    async def smart_click(self, target: str, *, timeout_ms: int = 5_000) -> bool:
+        """Click using a fallback chain optimized for sequential SPA steps
+        (per qa-pilot issue #6 — the Kai sequencer fix). Tries:
+
+          1. role=button name=target           — most semantic + most reliable
+          2. role=link name=target
+          3. text=target                       — fallback when role isn't set
+          4. css selector heuristics           — last resort
+
+        Returns True on the first success. False if all four miss.
+        """
+        attempts = [
+            lambda: self.page.get_by_role("button", name=target).first.click(timeout=timeout_ms),
+            lambda: self.page.get_by_role("link", name=target).first.click(timeout=timeout_ms),
+            lambda: self.page.get_by_text(target, exact=False).first.click(timeout=timeout_ms),
+            lambda: self.page.locator(f"[aria-label*={target!r} i]").first.click(timeout=timeout_ms),
+        ]
+        for i, attempt in enumerate(attempts, 1):
+            try:
+                await attempt()
+                return True
+            except Exception as e:
+                logger.debug("smart_click attempt %d for %r failed: %s", i, target, e)
+        logger.warning("smart_click(%r) exhausted all 4 strategies", target)
+        return False
 
     async def fill_first_input(self, value: str) -> bool:
         """Fill the first visible <input>. Naive but useful for chat-y UIs."""
