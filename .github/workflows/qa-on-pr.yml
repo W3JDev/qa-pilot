@@ -2,20 +2,60 @@ name: QA Pilot — PR check
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
       target_url:
-        description: "URL to test (defaults to staging)"
+        description: "URL to test"
         required: false
-        default: "https://staging.example.com"
+        default: ""
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.gate.outputs.should_run }}
+      reason: ${{ steps.gate.outputs.reason }}
+    steps:
+      - name: Decide whether to run QA
+        id: gate
+        env:
+          DRAFT: ${{ github.event.pull_request.draft }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OLLAMA_API_BASE: ${{ secrets.OLLAMA_API_BASE }}
+          TARGET_FROM_VAR: ${{ vars.QA_PILOT_TARGET_URL }}
+          TARGET_FROM_INPUT: ${{ inputs.target_url }}
+        run: |
+          if [ "$DRAFT" = "true" ]; then
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "reason=PR is in draft state" >> $GITHUB_OUTPUT
+            echo "::notice::Skipping QA run — PR is a draft. Mark it as ready for review to trigger."
+            exit 0
+          fi
+          if [ -z "$OPENAI_API_KEY$ANTHROPIC_API_KEY$GEMINI_API_KEY$OLLAMA_API_BASE" ]; then
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "reason=No LLM provider configured" >> $GITHUB_OUTPUT
+            echo "::notice::Skipping QA run — no provider key set. Add OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY, or OLLAMA_API_BASE to repo secrets."
+            exit 0
+          fi
+          if [ -z "$TARGET_FROM_VAR$TARGET_FROM_INPUT" ]; then
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            echo "reason=No target URL configured" >> $GITHUB_OUTPUT
+            echo "::notice::Skipping QA run — set repo variable QA_PILOT_TARGET_URL or pass target_url via workflow_dispatch."
+            exit 0
+          fi
+          echo "should_run=true" >> $GITHUB_OUTPUT
+          echo "reason=All preflight checks passed" >> $GITHUB_OUTPUT
+
   qa:
+    needs: preflight
+    if: needs.preflight.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      pull-requests: write   # to post PR comments
+      pull-requests: write
       contents: read
 
     steps:
@@ -35,36 +75,47 @@ jobs:
 
       - name: Pick target URL
         id: target
+        env:
+          INPUT_URL: ${{ inputs.target_url }}
+          VAR_URL: ${{ vars.QA_PILOT_TARGET_URL }}
         run: |
-          if [ -n "${{ inputs.target_url }}" ]; then
-            echo "url=${{ inputs.target_url }}" >> $GITHUB_OUTPUT
-          else
-            # Default — read from a repo variable, or fall back
-            echo "url=${{ vars.QA_PILOT_TARGET_URL || 'https://example.com' }}" >> $GITHUB_OUTPUT
-          fi
+          URL="${INPUT_URL:-$VAR_URL}"
+          echo "url=$URL" >> $GITHUB_OUTPUT
 
       - name: Run QA team
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OLLAMA_API_BASE: ${{ secrets.OLLAMA_API_BASE }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          # Build a config on the fly; users can also commit a real one.
+          # Pick a default model based on which provider key is set
+          if [ -n "$OLLAMA_API_BASE" ]; then
+            MODEL="ollama/llama3.1:8b"
+          elif [ -n "$OPENAI_API_KEY" ]; then
+            MODEL="gpt-4o-mini"
+          elif [ -n "$ANTHROPIC_API_KEY" ]; then
+            MODEL="claude-3-5-haiku-latest"
+          elif [ -n "$GEMINI_API_KEY" ]; then
+            MODEL="gemini/gemini-2.5-flash"
+          fi
+          echo "Using model: $MODEL"
+
           cat > /tmp/qa.yaml <<EOF
           target_url: ${{ steps.target.outputs.url }}
           viewports:
             - { width: 1440, height: 900, name: desktop }
             - { width: 390,  height: 844, name: mobile }
-          agents: [vega_smoke, iris_visual, sage_aesthetic]
+          agents: [vega_smoke, iris_visual, sage_aesthetic, argus_watchdog]
           report:
             formats: [markdown]
             destinations:
               - { type: file, path: ./qa-report.md }
               - { type: github_pr_comment }
-          llm_model: gpt-4o-mini
+          llm_model: ${MODEL}
           EOF
           qa-pilot run /tmp/qa.yaml --verbose
 
