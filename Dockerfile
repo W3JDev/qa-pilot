@@ -29,7 +29,7 @@ COPY src /work/src
 RUN pip install --no-cache-dir .
 
 # Install Playwright Chromium (skip Firefox + WebKit to keep the image small)
-RUN python -m playwright install chromium --with-deps=false
+RUN python -m playwright install chromium
 
 ENTRYPOINT ["qa-pilot"]
 CMD ["--help"]

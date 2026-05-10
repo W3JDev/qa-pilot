@@ -26,8 +26,11 @@ COPY pyproject.toml README.md /work/
 COPY src /work/src
 RUN pip install --no-cache-dir .[server]
 
-# Install Playwright Chromium (headless build)
-RUN python -m playwright install chromium --with-deps=false
+# Install Playwright Chromium (headless build).
+# System libraries (libnss3, libatk1.0-0, libxcomposite1, ...) are already
+# installed manually in step 2 above, so we omit --with-deps. Older
+# Playwright accepted --with-deps=false; current versions don't.
+RUN python -m playwright install chromium
 
 # Default Railway sets $PORT; we honor it. Health check at /health.
 EXPOSE 8000
