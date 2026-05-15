@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QA Pilot — Autonomous QA for any web app</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#0a0a0c',
+            'obsidian-2': '#111114',
+            'obsidian-3': '#18181c',
+            'obsidian-4': '#1e1e24',
+            gold: '#c8a45c',
+            'gold-light': '#dfc07e',
+            'gold-muted': '#8a6d35',
+            'text-primary': '#f0f0f0',
+            'text-secondary': '#a0a0a8',
+            'text-muted': '#60606a',
+            border: '#2a2a32',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    * { -webkit-font-smoothing: antialiased; }
+    body { background-color: #0a0a0c; color: #f0f0f0; font-family: 'Inter', sans-serif; }
+
+    .gold-gradient { background: linear-gradient(135deg, #c8a45c 0%, #dfc07e 50%, #c8a45c 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    .card-glow { border: 1px solid #2a2a32; transition: border-color 0.2s, box-shadow 0.2s; }
+    .card-glow:hover { border-color: #8a6d35; box-shadow: 0 0 24px rgba(200, 164, 92, 0.08); }
+
+    .agent-badge { display: inline-block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; }
+
+    .hero-grid-line { background: repeating-linear-gradient(90deg, transparent, transparent 79px, #1e1e24 79px, #1e1e24 80px), repeating-linear-gradient(180deg, transparent, transparent 79px, #1e1e24 79px, #1e1e24 80px); }
+
+    .pricing-popular { position: relative; border-color: #c8a45c !important; }
+    .pricing-popular::before { content: 'Most Popular'; position: absolute; top: -1px; left: 50%; transform: translateX(-50%); background: #c8a45c; color: #0a0a0c; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 12px; border-radius: 0 0 6px 6px; white-space: nowrap; }
+
+    .step-connector { width: 1px; height: 32px; background: linear-gradient(to bottom, #2a2a32, transparent); margin: 0 auto; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-up { animation: fadeUp 0.6s ease forwards; }
+    .delay-1 { animation-delay: 0.1s; opacity: 0; }
+    .delay-2 { animation-delay: 0.2s; opacity: 0; }
+    .delay-3 { animation-delay: 0.3s; opacity: 0; }
+    .delay-4 { animation-delay: 0.4s; opacity: 0; }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-border bg-obsidian/90 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-gold font-semibold text-sm tracking-wide">QA Pilot</span>
+        <span class="text-text-muted text-xs">by W3JDev</span>
+      </div>
+      <div class="hidden md:flex items-center gap-8 text-sm text-text-secondary">
+        <a href="#how-it-works" class="hover:text-text-primary transition-colors">How it works</a>
+        <a href="#agents" class="hover:text-text-primary transition-colors">Agents</a>
+        <a href="#pricing" class="hover:text-text-primary transition-colors">Pricing</a>
+        <a href="https://github.com/W3JDev/qa-pilot" target="_blank" rel="noopener noreferrer" class="hover:text-text-primary transition-colors">GitHub</a>
+      </div>
+      <a href="https://github.com/W3JDev/qa-pilot" target="_blank" rel="noopener noreferrer"
+         class="text-xs font-semibold px-4 py-2 bg-obsidian-4 border border-border rounded-md hover:border-gold-muted transition-colors text-text-primary">
+        Star on GitHub
+      </a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="relative pt-32 pb-24 overflow-hidden">
+    <div class="absolute inset-0 hero-grid-line opacity-40 pointer-events-none"></div>
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-px h-32 bg-gradient-to-b from-transparent to-gold opacity-30"></div>
+    <div class="max-w-5xl mx-auto px-6 text-center relative">
+      <div class="fade-up delay-1">
+        <div class="inline-flex items-center gap-2 text-xs text-text-secondary border border-border rounded-full px-4 py-1.5 mb-8 bg-obsidian-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse"></span>
+          Open source · MIT license · pip install qa-pilot
+        </div>
+      </div>
+
+      <h1 class="fade-up delay-2 text-5xl md:text-7xl font-bold tracking-tight leading-none mb-6">
+        <span class="text-text-primary">An autonomous QA team</span><br />
+        <span class="gold-gradient">for any web app.</span>
+      </h1>
+
+      <p class="fade-up delay-3 text-lg md:text-xl text-text-secondary max-w-2xl mx-auto mb-10 leading-relaxed">
+        Five specialist agents drive a real browser, capture evidence, and report findings like a human tester — in seconds, not sprint cycles. Run locally, in CI, in Docker, or as a hosted service.
+      </p>
+
+      <div class="fade-up delay-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <div class="group relative">
+          <div class="absolute -inset-0.5 bg-gradient-to-r from-gold-muted to-gold rounded-lg opacity-30 group-hover:opacity-60 blur transition-opacity"></div>
+          <a href="https://github.com/W3JDev/qa-pilot" target="_blank" rel="noopener noreferrer"
+             class="relative flex items-center gap-2 px-6 py-3 bg-obsidian rounded-lg text-sm font-semibold text-gold border border-gold-muted hover:border-gold transition-colors">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            Star on GitHub
+          </a>
+        </div>
+        <a href="#waitlist" class="px-6 py-3 bg-gold text-obsidian rounded-lg text-sm font-semibold hover:bg-gold-light transition-colors">
+          Join the cloud waitlist
+        </a>
+      </div>
+
+      <!-- Quick Install -->
+      <div class="mt-12 inline-flex items-center gap-3 px-5 py-3 bg-obsidian-3 border border-border rounded-lg text-left">
+        <span class="text-text-muted text-xs font-medium select-none">$</span>
+        <code class="text-sm text-gold font-mono">pip install qa-pilot &amp;&amp; qa-pilot smoke https://example.com</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOCIAL PROOF BAR -->
+  <div class="border-y border-border bg-obsidian-2">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex flex-wrap items-center justify-center gap-8 text-xs text-text-muted">
+      <span>Real Playwright browser — not mocks</span>
+      <span class="text-border">·</span>
+      <span>LLM-driven decision making</span>
+      <span class="text-border">·</span>
+      <span>OpenAI · Anthropic · Gemini · Ollama</span>
+      <span class="text-border">·</span>
+      <span>CI / Docker / self-host / SaaS</span>
+      <span class="text-border">·</span>
+      <span>MIT licensed · free forever</span>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <section id="how-it-works" class="py-24">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <p class="text-xs text-gold font-semibold tracking-widest uppercase mb-3">How it works</p>
+        <h2 class="text-3xl md:text-4xl font-bold text-text-primary mb-4">One command. Five agents. One report.</h2>
+        <p class="text-text-secondary max-w-xl mx-auto">Manual QA after every deploy is the silent tax on every product team. QA Pilot eliminates it.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="card-glow rounded-xl p-6 bg-obsidian-2">
+          <div class="w-8 h-8 rounded-lg bg-obsidian-4 border border-border flex items-center justify-center mb-4 text-gold font-bold text-sm">1</div>
+          <h3 class="text-text-primary font-semibold mb-2">Point it at a URL</h3>
+          <p class="text-text-secondary text-sm leading-relaxed">Run <code class="text-gold text-xs">qa-pilot run cockpit.yaml</code> or call the API. Give it a URL — or a YAML with user journeys and viewports.</p>
+        </div>
+        <div class="card-glow rounded-xl p-6 bg-obsidian-2">
+          <div class="w-8 h-8 rounded-lg bg-obsidian-4 border border-border flex items-center justify-center mb-4 text-gold font-bold text-sm">2</div>
+          <h3 class="text-text-primary font-semibold mb-2">Agents run in parallel</h3>
+          <p class="text-text-secondary text-sm leading-relaxed">QA Lead dispatches all five agents simultaneously. Each drives a real Chromium browser, guided by an LLM that picks the next action from what it sees on screen.</p>
+        </div>
+        <div class="card-glow rounded-xl p-6 bg-obsidian-2">
+          <div class="w-8 h-8 rounded-lg bg-obsidian-4 border border-border flex items-center justify-center mb-4 text-gold font-bold text-sm">3</div>
+          <h3 class="text-text-primary font-semibold mb-2">Get a unified report</h3>
+          <p class="text-text-secondary text-sm leading-relaxed">Typed Findings aggregated into a single Markdown or JSON report. Posted to GitHub PR comments, Slack, Telegram, or written to a file.</p>
+        </div>
+      </div>
+
+      <!-- Architecture diagram -->
+      <div class="mt-10 rounded-xl bg-obsidian-3 border border-border p-6 overflow-x-auto">
+        <pre class="text-xs text-text-secondary font-mono leading-relaxed whitespace-pre">
+                  ┌─────────────────┐
+                  │   QA Lead       │
+                  │  (orchestrator) │
+                  └────────┬────────┘
+                           │  dispatch in parallel
+     ┌─────────┬───────────┼───────────┬────────────┐
+     ▼         ▼           ▼           ▼            ▼
+ ┌─────┐  ┌──────┐    ┌──────┐    ┌──────┐    ┌──────┐
+ │<span class="text-gold">Vega</span> │  │<span class="text-gold"> Iris </span>│    │<span class="text-gold"> Kai  </span>│    │<span class="text-gold">Argus </span>│    │<span class="text-gold"> Sage </span>│
+ │smoke│  │visual│    │ flow │    │watch │    │  ux  │
+ └──┬──┘  └──┬───┘    └──┬───┘    └──┬───┘    └──┬───┘
+    └────────┴───────────┼───────────┴────────────┘
+                         ▼
+                ┌────────────────┐
+                │  Findings[]    │  ← typed (Pydantic)
+                └────────┬───────┘
+                         ▼
+            ┌────────────────────────┐
+            │  Reporter(s)           │
+            │  • markdown / json     │
+            │  • github PR comment   │
+            │  • slack / telegram    │
+            └────────────────────────┘</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- AGENTS GRID -->
+  <section id="agents" class="py-24 bg-obsidian-2 border-y border-border">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <p class="text-xs text-gold font-semibold tracking-widest uppercase mb-3">The team</p>
+        <h2 class="text-3xl md:text-4xl font-bold text-text-primary mb-4">Five specialists. One mission.</h2>
+        <p class="text-text-secondary max-w-xl mx-auto">Each agent owns a distinct slice of quality — together they cover what no single tool can.</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+
+        <div class="card-glow rounded-xl p-6 bg-obsidian">
+          <div class="flex items-start justify-between mb-4">
+            <div>
+              <span class="agent-badge bg-obsidian-4 border border-border text-gold">Vega</span>
+              <p class="text-text-muted text-xs mt-1">Smoke Agent</p>
+            </div>
+            <div class="text-2xl" role="img" aria-label="Vega Smoke Agent icon">🔥</div>
+          </div>
+          <h3 class="text-text-primary font-semibold mb-2">"Does the app respond at all?"</h3>
+          <p class="text-text-secondary text-sm leading-relaxed">HTTP status checks, render verification, basic responsiveness. The first signal that something is broken — or not.</p>
+          <div class="mt-4 pt-4 border-t border-border">
+            <p class="text-xs text-text-muted">Output: Pass / fail per URL with HTTP + render check</p>
+          </div>
+        </div>
+
+        <div class="card-glow rounded-xl p-6 bg-obsidian">
+          <div class="flex items-start justify-between mb-4">
+            <div>
+              <span class="agent-badge bg-obsidian-4 border border-border text-gold">Iris</span>
+              <p class="text-text-muted text-xs mt-1">Visual Agent</p>
+            </div>
+            <div class="text-2xl" role="img" aria-label="Iris Visual Agent icon">👁</div>
+          </div>
+          <h3 class="text-text-primary font-semibold mb-2">"What does it look like at every viewport?"</h3>
+          <p class="text-text-secondary text-sm leading-relaxed">Screenshots vs baselines across desktop, tablet, mobile. Pixel diffs. Broken image detection. Layout regressions.</p>
+          <div class="mt-4 pt-4 border-t border-border">
+            <p class="text-xs text-text-muted">Output: Screenshots, pixel diffs, broken-image flags</p>
+          </div>
+        </div>
+
+        <div class="card-glow rounded-xl p-6 bg-obsidian">
+          <div class="flex items-start justify-between mb-4">
+            <div>
+              <span class="agent-badge bg-obsidian-4 border border-border text-gold">Kai</span>
+              <p class="text-text-muted text-xs mt-1">Journey Agent</p>
+            </div>
+            <div class="text-2xl" role="img" aria-label="Kai Journey Agent icon">🧭</div>
+          </div>
+          <h3 class="text-text-primary font-semibold mb-2">"Can a user actually do the thing?"</h3>
+          <p class="text-text-secondary text-sm leading-relaxed">Scripted user journeys with click, type, scroll, assert steps. Each step reported with pass/fail and reproduction steps.</p>
+          <div class="mt-4 pt-4 border-t border-border">
+            <p class="text-xs text-text-muted">Output: Per-step pass/fail with full repro steps</p>
+          </div>
+        </div>
+
+        <div class="card-glow rounded-xl p-6 bg-obsidian">
+          <div class="flex items-start justify-between mb-4">
+            <div>
+              <span class="agent-badge bg-obsidian-4 border border-border text-gold">Argus</span>
+              <p class="text-text-muted text-xs mt-1">Watchdog Agent</p>
+            </div>
+            <div class="text-2xl" role="img" aria-label="Argus Watchdog Agent icon">🐺</div>
+          </div>
+          <h3 class="text-text-primary font-semibold mb-2">"What's exploding in console / network?"</h3>
+          <p class="text-text-secondary text-sm leading-relaxed">Captures every console error, stack trace, and failed network request. Severity-scaled: 5xx blocker → console warning low.</p>
+          <div class="mt-4 pt-4 border-t border-border">
+            <p class="text-xs text-text-muted">Output: Bug list with stack traces and failed requests</p>
+          </div>
+        </div>
+
+        <div class="card-glow rounded-xl p-6 bg-obsidian">
+          <div class="flex items-start justify-between mb-4">
+            <div>
+              <span class="agent-badge bg-obsidian-4 border border-border text-gold">Sage</span>
+              <p class="text-text-muted text-xs mt-1">Aesthetic Agent</p>
+            </div>
+            <div class="text-2xl" role="img" aria-label="Sage Aesthetic Agent icon">✦</div>
+          </div>
+          <h3 class="text-text-primary font-semibold mb-2">"Does this feel premium or AI-built?"</h3>
+          <p class="text-text-secondary text-sm leading-relaxed">Polish and perceived quality. Ranks issues by visual impact. The agent that catches what automated tests never notice.</p>
+          <div class="mt-4 pt-4 border-t border-border">
+            <p class="text-xs text-text-muted">Output: Punch list of polish items, ranked by visibility</p>
+          </div>
+        </div>
+
+        <!-- Orchestrator card -->
+        <div class="rounded-xl p-6 bg-obsidian-3 border border-border border-dashed flex flex-col justify-center">
+          <p class="text-xs text-gold font-semibold uppercase tracking-widest mb-2">QA Lead</p>
+          <p class="text-text-secondary text-sm leading-relaxed">The orchestrator that dispatches all five agents in parallel and aggregates their Findings into a single typed report.</p>
+          <div class="mt-4">
+            <a href="https://github.com/W3JDev/qa-pilot#architecture" target="_blank" rel="noopener noreferrer" class="text-xs text-gold hover:text-gold-light transition-colors">Read the architecture docs →</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing" class="py-24">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <p class="text-xs text-gold font-semibold tracking-widest uppercase mb-3">Pricing</p>
+        <h2 class="text-3xl md:text-4xl font-bold text-text-primary mb-4">Start free. Scale when you ship.</h2>
+        <p class="text-text-secondary max-w-xl mx-auto">The OSS tool is and will always be free. The hosted cloud is coming — get on the waitlist.</p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-6 items-start">
+
+        <!-- Open -->
+        <div class="card-glow rounded-xl p-7 bg-obsidian-2">
+          <p class="text-xs text-text-muted font-semibold uppercase tracking-widest mb-2">Open</p>
+          <p class="text-4xl font-bold text-text-primary mb-1">Free</p>
+          <p class="text-text-secondary text-sm mb-6">Always. MIT license.</p>
+          <ul class="space-y-3 text-sm text-text-secondary mb-8">
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> All 5 agents (Vega, Iris, Kai, Argus, Sage)</li>
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> Run locally or in CI</li>
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> Bring your own LLM key</li>
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> Docker + GitHub Actions</li>
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> Markdown, JSON, PR comment output</li>
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> Self-hosted Railway / Fly.io</li>
+          </ul>
+          <a href="https://github.com/W3JDev/qa-pilot" target="_blank" rel="noopener noreferrer"
+             class="block w-full text-center py-2.5 border border-border rounded-lg text-sm font-medium text-text-primary hover:border-gold-muted transition-colors">
+            Get started on GitHub
+          </a>
+        </div>
+
+        <!-- Cloud -->
+        <div class="card-glow pricing-popular rounded-xl p-7 bg-obsidian-2 mt-4 md:mt-0">
+          <p class="text-xs text-text-muted font-semibold uppercase tracking-widest mb-2 mt-3">Cloud</p>
+          <p class="text-4xl font-bold text-text-primary mb-1">$49<span class="text-base font-normal text-text-secondary">/mo</span></p>
+          <p class="text-text-secondary text-sm mb-6">Early access pricing — locked in forever.</p>
+          <ul class="space-y-3 text-sm text-text-secondary mb-8">
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> Everything in Open</li>
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> Hosted SaaS — no infra to manage</li>
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> LLM cost included (OpenAI GPT-4o)</li>
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> Scheduled cron QA runs</li>
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> Visual regression baseline storage</li>
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> Slack / Telegram alerts included</li>
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> Up to 10 projects</li>
+          </ul>
+          <a href="#waitlist"
+             class="block w-full text-center py-2.5 bg-gold text-obsidian rounded-lg text-sm font-semibold hover:bg-gold-light transition-colors">
+            Join the waitlist
+          </a>
+        </div>
+
+        <!-- Enterprise -->
+        <div class="card-glow rounded-xl p-7 bg-obsidian-2">
+          <p class="text-xs text-text-muted font-semibold uppercase tracking-widest mb-2">Enterprise</p>
+          <p class="text-4xl font-bold text-text-primary mb-1">Custom</p>
+          <p class="text-text-secondary text-sm mb-6">For teams shipping at scale.</p>
+          <ul class="space-y-3 text-sm text-text-secondary mb-8">
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> Everything in Cloud</li>
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> Unlimited projects</li>
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> Private cloud / VPC deployment</li>
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> Custom agent personas</li>
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> SSO / SAML</li>
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> SLA + dedicated support</li>
+            <li class="flex items-start gap-2"><span class="text-gold mt-0.5">✓</span> Bring your own LLM contract</li>
+          </ul>
+          <a href="mailto:hello@qa-pilot.dev"
+             class="block w-full text-center py-2.5 border border-border rounded-lg text-sm font-medium text-text-primary hover:border-gold-muted transition-colors">
+            Contact us
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA / WAITLIST -->
+  <section id="waitlist" class="py-24 bg-obsidian-2 border-y border-border">
+    <div class="max-w-2xl mx-auto px-6 text-center">
+      <p class="text-xs text-gold font-semibold tracking-widest uppercase mb-4">Early access</p>
+      <h2 class="text-3xl md:text-4xl font-bold text-text-primary mb-4">Be the first to ship with qa-pilot.dev</h2>
+      <p class="text-text-secondary mb-10 leading-relaxed">
+        Drop in your URL, set a cron schedule, get a report in your inbox and Slack channel after every deploy. No infra. No keys. Just QA that actually works.
+      </p>
+      <form class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto" onsubmit="return false;">
+        <input
+          type="email"
+          placeholder="you@company.com"
+          class="flex-1 px-4 py-3 bg-obsidian border border-border rounded-lg text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-gold-muted transition-colors"
+        />
+        <button type="submit"
+          class="px-6 py-3 bg-gold text-obsidian rounded-lg text-sm font-semibold hover:bg-gold-light transition-colors whitespace-nowrap">
+          Join waitlist
+        </button>
+      </form>
+      <p class="text-text-muted text-xs mt-4">No spam. Unsubscribe any time. Early access pricing locked in.</p>
+
+      <div class="mt-12 pt-10 border-t border-border">
+        <p class="text-text-secondary text-sm mb-4">Already using QA Pilot? Leave a ⭐ — it helps.</p>
+        <a href="https://github.com/W3JDev/qa-pilot" target="_blank" rel="noopener noreferrer"
+           class="inline-flex items-center gap-2 px-5 py-2.5 border border-border rounded-lg text-sm font-medium text-text-primary hover:border-gold-muted transition-colors">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          W3JDev/qa-pilot on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="py-12 border-t border-border">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div>
+          <p class="text-gold font-semibold text-sm mb-1">QA Pilot</p>
+          <p class="text-text-muted text-xs">An autonomous QA team for any web app. MIT license.</p>
+        </div>
+        <div class="flex items-center gap-6 text-xs text-text-muted">
+          <a href="https://github.com/W3JDev/qa-pilot" target="_blank" rel="noopener noreferrer" class="hover:text-text-secondary transition-colors">GitHub</a>
+          <a href="https://github.com/W3JDev/qa-pilot/issues" target="_blank" rel="noopener noreferrer" class="hover:text-text-secondary transition-colors">Issues</a>
+          <a href="https://github.com/W3JDev/qa-pilot/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" class="hover:text-text-secondary transition-colors">MIT License</a>
+          <a href="mailto:hello@qa-pilot.dev" class="hover:text-text-secondary transition-colors">hello@qa-pilot.dev</a>
+        </div>
+      </div>
+      <div class="mt-8 pt-6 border-t border-border text-center text-xs text-text-muted">
+        Built by <a href="https://github.com/W3JDev" target="_blank" rel="noopener noreferrer" class="text-gold hover:text-gold-light transition-colors">W3JDev</a>.
+        Powered by Playwright + litellm + five opinionated agents.
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
